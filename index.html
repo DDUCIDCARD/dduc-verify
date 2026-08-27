@@ -16,7 +16,7 @@
     .header h1 { font-size: 1.15rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
     .header h2 { font-size: 0.8rem; font-weight: 500; color: #93c5fd; }
     
-    /* Verified Banner */
+    /* Verified / Expired Banner */
     .status-banner { background-color: #e6f7f0; color: #00a86b; text-align: center; padding: 8px; font-weight: 700; font-size: 0.78rem; letter-spacing: 0.5px; text-transform: uppercase; border-bottom: 1px solid #d1fae5; }
     .status-banner.expired { background-color: #fee2e2; color: #dc2626; border-bottom: 1px solid #fecaca; }
 
@@ -60,90 +60,37 @@
       <h2>University of Delhi • Student ID Verification</h2>
     </div>
 
-    <!-- Loading State (a11y) -->
+    <!-- Loading State -->
     <div id="loadingState" class="state-box" aria-live="polite" role="status">
       <div class="spinner"></div>
       <p style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Authenticating Student Record...</p>
     </div>
 
-    <!-- Error State (a11y) -->
+    <!-- Error State -->
     <div id="errorState" class="state-box" style="display: none;" aria-live="polite" role="alert">
       <div class="error-icon">⚠️</div>
       <div id="errorTitle" class="error-title">Verification Failed</div>
       <div id="errorDesc" class="error-desc">Invalid parameters or record tampered with.</div>
     </div>
 
-    <!-- Valid / Success Card UI (a11y) -->
+    <!-- Valid / Success Card UI -->
     <div id="studentCard" style="display: none;" aria-live="polite">
       <div id="statusBanner" class="status-banner">● VERIFIED STUDENT RECORD</div>
 
       <div class="content">
-        <div class="photo-wrapper">
+        <!-- Student Photo Wrapper -->
+        <div id="photoWrapper" class="photo-wrapper">
           <div class="photo-frame">
             <img id="studentPhoto" class="profile-photo" src="" alt="Student Profile Photo"
                  onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2394a3b8\' stroke-width=\'2\'><path d=\'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2\'/><circle cx=\'12\' cy=\'7\' r=\'4\'/></svg>';">
           </div>
         </div>
 
+        <!-- Info Grid containing only Student Name -->
         <div class="info-grid">
           <div class="field-box full-width">
             <div class="field-label">Student Name</div>
             <div class="field-value" id="valName">-</div>
-          </div>
-          
-          <div class="field-box full-width">
-            <div class="field-label">Course Name</div>
-            <div class="field-value" id="valCourse">-</div>
-          </div>
-
-          <div class="field-box">
-            <div class="field-label">College Roll No.</div>
-            <div class="field-value" id="valRollNo">-</div>
-          </div>
-          <div class="field-box">
-            <div class="field-label">Exam Roll No.</div>
-            <div class="field-value" id="valExamRollNo">-</div>
-          </div>
-
-          <div class="field-box">
-            <div class="field-label">Date of Birth</div>
-            <div class="field-value" id="valDob">-</div>
-          </div>
-          <div class="field-box">
-            <div class="field-label">Admission Year</div>
-            <div class="field-value" id="valAdmissionYear">-</div>
-          </div>
-
-          <div class="field-box">
-            <div class="field-label">Student's Mobile No.</div>
-            <div class="field-value" id="valMobile">-</div>
-          </div>
-          <div class="field-box">
-            <div class="field-label">Institutional Email</div>
-            <div class="field-value" id="valEmail">-</div>
-          </div>
-
-          <div class="field-box">
-            <div class="field-label">Father's Name</div>
-            <div class="field-value" id="valFatherName">-</div>
-          </div>
-          <div class="field-box">
-            <div class="field-label">Father's Mobile</div>
-            <div class="field-value" id="valFatherMobile">-</div>
-          </div>
-
-          <div class="field-box full-width">
-            <div class="field-label">Local Address</div>
-            <div class="field-value" id="valAddress">-</div>
-          </div>
-
-          <div class="field-box">
-            <div class="field-label">Valid Upto</div>
-            <div class="field-value" id="valValidUpto">-</div>
-          </div>
-          <div class="field-box">
-            <div class="field-label">Status</div>
-            <div class="field-value" id="valStatus">-</div>
           </div>
         </div>
       </div>
@@ -175,7 +122,6 @@
 
       try {
         const fetchUrl = `${APPS_SCRIPT_URL}?g=${encodeURIComponent(group)}&r=${encodeURIComponent(rollNo)}&t=${encodeURIComponent(token)}`;
-        // Cache option disabled to prevent stale verification data
         const response = await fetch(fetchUrl, { cache: "no-store" });
         const data = await response.json();
 
@@ -184,47 +130,43 @@
           return;
         }
 
-        renderCard(data.student, data.isExpired);
+        renderCard(data.student, data.isExpired, data.isRevoked);
       } catch (err) {
         showError("Connection Error", "Unable to connect to verification server.");
       }
     });
 
-    function renderCard(student, isExpired) {
+    function renderCard(student, isExpired, isRevoked) {
       document.getElementById('loadingState').style.display = 'none';
       document.getElementById('studentCard').style.display = 'block';
 
       const banner = document.getElementById('statusBanner');
-      const statusValue = document.getElementById('valStatus');
+      const photoWrapper = document.getElementById('photoWrapper');
+      const studentPhoto = document.getElementById('studentPhoto');
 
-      if (isExpired) {
+      // Check status flags for Expired or Revoked
+      const rawStatus = (student.status || '').toUpperCase();
+      const isInvalid = isExpired || isRevoked || rawStatus === 'EXPIRED' || rawStatus === 'REVOKED';
+
+      if (isInvalid) {
         banner.className = 'status-banner expired';
-        banner.innerText = '⚠️ RECORD EXPIRED';
-        statusValue.className = 'field-value status-expired-text';
-        statusValue.innerText = '✕ EXPIRED';
+        banner.innerText = (isRevoked || rawStatus === 'REVOKED') ? '⚠️ RECORD REVOKED' : '⚠️ RECORD EXPIRED';
+        
+        // Hide photo wrapper on Expired or Revoked status
+        photoWrapper.style.display = 'none';
       } else {
         banner.className = 'status-banner';
         banner.innerText = '● VERIFIED STUDENT RECORD';
-        statusValue.className = 'field-value status-active-text';
-        statusValue.innerText = '✓ ACTIVE';
+        
+        // Display photo when active
+        photoWrapper.style.display = 'block';
+        if (student.photo) {
+          studentPhoto.src = student.photo;
+        }
       }
 
+      // Populate only Student Name field
       document.getElementById('valName').innerText = student.name || '-';
-      document.getElementById('valCourse').innerText = student.courseName || '-';
-      document.getElementById('valRollNo').innerText = student.rollNo || '-';
-      document.getElementById('valExamRollNo').innerText = student.examRollNo || '-';
-      document.getElementById('valDob').innerText = student.dob || '-';
-      document.getElementById('valAdmissionYear').innerText = student.yearOfAdmission || '-';
-      document.getElementById('valMobile').innerText = student.studentMobile || '-';
-      document.getElementById('valEmail').innerText = student.institutionalEmail || '-';
-      document.getElementById('valFatherName').innerText = student.fatherName || '-';
-      document.getElementById('valFatherMobile').innerText = student.fatherMobile || '-';
-      document.getElementById('valAddress').innerText = student.localAddress || '-';
-      document.getElementById('valValidUpto').innerText = student.validUpto || '-';
-
-      if (student.photo) {
-        document.getElementById('studentPhoto').src = student.photo;
-      }
     }
 
     function showError(title, message) {
