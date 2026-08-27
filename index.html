@@ -16,13 +16,13 @@
     .header h1 { font-size: 1.15rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
     .header h2 { font-size: 0.8rem; font-weight: 500; color: #93c5fd; }
     
-    /* Verified / Expired Banner */
+    /* Status Banner */
     .status-banner { background-color: #e6f7f0; color: #00a86b; text-align: center; padding: 8px; font-weight: 700; font-size: 0.78rem; letter-spacing: 0.5px; text-transform: uppercase; border-bottom: 1px solid #d1fae5; }
     .status-banner.expired { background-color: #fee2e2; color: #dc2626; border-bottom: 1px solid #fecaca; }
 
     .content { padding: 20px; }
     
-    /* Student Photo with Frame */
+    /* Student Photo Frame */
     .photo-wrapper { text-align: center; margin-bottom: 20px; }
     .photo-frame { display: inline-block; padding: 3px; background: linear-gradient(135deg, #fbcfe8 0%, #e9d5ff 100%); border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
     .profile-photo { width: 115px; height: 135px; object-fit: cover; border-radius: 10px; display: block; background-color: #e2e8f0; }
@@ -78,7 +78,7 @@
       <div id="statusBanner" class="status-banner">● VERIFIED STUDENT RECORD</div>
 
       <div class="content">
-        <!-- Student Photo Wrapper -->
+        <!-- Photo Container -->
         <div id="photoWrapper" class="photo-wrapper">
           <div class="photo-frame">
             <img id="studentPhoto" class="profile-photo" src="" alt="Student Profile Photo"
@@ -86,11 +86,67 @@
           </div>
         </div>
 
-        <!-- Info Grid containing only Student Name -->
         <div class="info-grid">
+          <!-- Student Name (Always Displayed) -->
           <div class="field-box full-width">
             <div class="field-label">Student Name</div>
             <div class="field-value" id="valName">-</div>
+          </div>
+          
+          <!-- Full Grid Details (Hidden ONLY for Expired Students) -->
+          <div class="field-box full-width extra-field">
+            <div class="field-label">Course Name</div>
+            <div class="field-value" id="valCourse">-</div>
+          </div>
+
+          <div class="field-box extra-field">
+            <div class="field-label">College Roll No.</div>
+            <div class="field-value" id="valRollNo">-</div>
+          </div>
+          <div class="field-box extra-field">
+            <div class="field-label">Exam Roll No.</div>
+            <div class="field-value" id="valExamRollNo">-</div>
+          </div>
+
+          <div class="field-box extra-field">
+            <div class="field-label">Date of Birth</div>
+            <div class="field-value" id="valDob">-</div>
+          </div>
+          <div class="field-box extra-field">
+            <div class="field-label">Admission Year</div>
+            <div class="field-value" id="valAdmissionYear">-</div>
+          </div>
+
+          <div class="field-box extra-field">
+            <div class="field-label">Student's Mobile No.</div>
+            <div class="field-value" id="valMobile">-</div>
+          </div>
+          <div class="field-box extra-field">
+            <div class="field-label">Institutional Email</div>
+            <div class="field-value" id="valEmail">-</div>
+          </div>
+
+          <div class="field-box extra-field">
+            <div class="field-label">Father's Name</div>
+            <div class="field-value" id="valFatherName">-</div>
+          </div>
+          <div class="field-box extra-field">
+            <div class="field-label">Father's Mobile</div>
+            <div class="field-value" id="valFatherMobile">-</div>
+          </div>
+
+          <div class="field-box full-width extra-field">
+            <div class="field-label">Local Address</div>
+            <div class="field-value" id="valAddress">-</div>
+          </div>
+
+          <div class="field-box extra-field">
+            <div class="field-label">Valid Upto</div>
+            <div class="field-value" id="valValidUpto">-</div>
+          </div>
+          <div class="field-box extra-field">
+            <div class="field-label">Status</div>
+            <div class="field-value" id="valStatus">-</div>
           </div>
         </div>
       </div>
@@ -142,31 +198,57 @@
 
       const banner = document.getElementById('statusBanner');
       const photoWrapper = document.getElementById('photoWrapper');
-      const studentPhoto = document.getElementById('studentPhoto');
+      const statusValue = document.getElementById('valStatus');
+      const extraFields = document.querySelectorAll('.extra-field');
 
-      // Check status flags for Expired or Revoked
       const rawStatus = (student.status || '').toUpperCase();
-      const isInvalid = isExpired || isRevoked || rawStatus === 'EXPIRED' || rawStatus === 'REVOKED';
+      const expiredState = isExpired || rawStatus === 'EXPIRED';
+      const revokedState = isRevoked || rawStatus === 'REVOKED';
 
-      if (isInvalid) {
+      if (expiredState) {
+        // EXPIRED STATE: Hide photo & full details, show Name ONLY + "Expired Identity Card or Invalid" message
         banner.className = 'status-banner expired';
-        banner.innerText = (isRevoked || rawStatus === 'REVOKED') ? '⚠️ RECORD REVOKED' : '⚠️ RECORD EXPIRED';
+        banner.innerText = '⚠️ EXPIRED IDENTITY CARD OR INVALID';
         
-        // Hide photo wrapper on Expired or Revoked status
         photoWrapper.style.display = 'none';
+        extraFields.forEach(el => el.style.display = 'none');
+      } else if (revokedState) {
+        // REVOKED STATE: Display FULL old template + photo + "RECORD REVOKED" banner
+        banner.className = 'status-banner expired';
+        banner.innerText = '⚠️ RECORD REVOKED';
+        statusValue.className = 'field-value status-expired-text';
+        statusValue.innerText = '✕ REVOKED';
+
+        photoWrapper.style.display = 'block';
+        extraFields.forEach(el => el.style.display = 'block');
       } else {
+        // VERIFIED / ACTIVE STATE: Display FULL old template + photo + "VERIFIED STUDENT RECORD" banner
         banner.className = 'status-banner';
         banner.innerText = '● VERIFIED STUDENT RECORD';
-        
-        // Display photo when active
+        statusValue.className = 'field-value status-active-text';
+        statusValue.innerText = '✓ ACTIVE';
+
         photoWrapper.style.display = 'block';
-        if (student.photo) {
-          studentPhoto.src = student.photo;
-        }
+        extraFields.forEach(el => el.style.display = 'block');
       }
 
-      // Populate only Student Name field
+      // Populate text values across all fields
       document.getElementById('valName').innerText = student.name || '-';
+      document.getElementById('valCourse').innerText = student.courseName || '-';
+      document.getElementById('valRollNo').innerText = student.rollNo || '-';
+      document.getElementById('valExamRollNo').innerText = student.examRollNo || '-';
+      document.getElementById('valDob').innerText = student.dob || '-';
+      document.getElementById('valAdmissionYear').innerText = student.yearOfAdmission || '-';
+      document.getElementById('valMobile').innerText = student.studentMobile || '-';
+      document.getElementById('valEmail').innerText = student.institutionalEmail || '-';
+      document.getElementById('valFatherName').innerText = student.fatherName || '-';
+      document.getElementById('valFatherMobile').innerText = student.fatherMobile || '-';
+      document.getElementById('valAddress').innerText = student.localAddress || '-';
+      document.getElementById('valValidUpto').innerText = student.validUpto || '-';
+
+      if (student.photo) {
+        document.getElementById('studentPhoto').src = student.photo;
+      }
     }
 
     function showError(title, message) {
